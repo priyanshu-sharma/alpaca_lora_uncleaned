@@ -286,7 +286,7 @@ def train(
 
 if __name__ == "__main__":
     start_training_time = time.time()
-    #fire.Fire(train)
+    fire.Fire(train)
     end_training_time = time.time()
     print("\nTotal Training Time - {}\n".format(end_training_time - start_training_time))
     datasets_list = ['wikitext', 'squadmini', 'squad', 'piqa']
@@ -296,6 +296,6 @@ if __name__ == "__main__":
     for datasets in datasets_list:
         start_evaluation_time = time.time()
         print("Running Evaluation on {} dataset with following parameters: -\n".format(datasets))
-        #evaluation(base_model, lora_weights, datasets, use_8bit)
+        evaluation(base_model, lora_weights, datasets, use_8bit)
         end_evaluation_time = time.time()
         print("\nTotal Evaluation Time - {}\n".format(end_evaluation_time - start_evaluation_time))
