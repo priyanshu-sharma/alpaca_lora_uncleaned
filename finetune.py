@@ -26,6 +26,9 @@ from utils.prompter import Prompter
 import time
 from evals import evaluation
 
+import wandb
+wandb.init(project='Alpaca Cleaned')
+config = wandb.config
 
 def train(
     # model/data params
