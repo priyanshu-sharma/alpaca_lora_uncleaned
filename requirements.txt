@@ -10,3 +10,13 @@ git+https://github.com/huggingface/peft.git
 transformers>=4.28.0
 sentencepiece
 gradio
+
+appdirs
+loralib
+bitsandbytes
+datasets
+evaluate
+sentencepiece
+Levenshtein
+git+https://github.com/huggingface/peft.git
+git+https://github.com/huggingface/transformers.git
