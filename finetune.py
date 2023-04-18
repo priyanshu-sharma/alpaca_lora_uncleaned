@@ -27,7 +27,7 @@ import time
 from evals import evaluation
 
 import wandb
-wandb.init(project='Alpaca Cleaned')
+wandb.init(project='Alpaca Uncleaned')
 config = wandb.config
 
 def train(
@@ -289,13 +289,14 @@ if __name__ == "__main__":
     fire.Fire(train)
     end_training_time = time.time()
     print("\nTotal Training Time - {}\n".format(end_training_time - start_training_time))
-    datasets_list = ['wikitext', 'squadmini', 'squad', 'piqa']
-    base_model = 'yahma/llama-7b-hf'
-    lora_weights = 'samwit/alpaca7B-lora'
-    use_8bit = False
-    for datasets in datasets_list:
-        start_evaluation_time = time.time()
-        print("Running Evaluation on {} dataset with following parameters: -\n".format(datasets))
-        evaluation(base_model, lora_weights, datasets, use_8bit)
-        end_evaluation_time = time.time()
-        print("\nTotal Evaluation Time - {}\n".format(end_evaluation_time - start_evaluation_time))
+    # datasets_list = ['wikitext', 'squadmini', 'squad', 'piqa']
+    # datasets_list = ['squadmini']
+    # base_model = 'yahma/llama-7b-hf'
+    # lora_weights = 'samwit/alpaca7B-lora'
+    # use_8bit = False
+    # for datasets in datasets_list:
+    #     start_evaluation_time = time.time()
+    #     print("Running Evaluation on {} dataset with following parameters: -\n".format(datasets))
+    #     evaluation(base_model, lora_weights, datasets, use_8bit)
+    #     end_evaluation_time = time.time()
+    #     print("\nTotal Evaluation Time - {}\n".format(end_evaluation_time - start_evaluation_time))
