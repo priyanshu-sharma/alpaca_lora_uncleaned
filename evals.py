@@ -252,7 +252,7 @@ def digit_or_text(input):
     else:
         return None
 
-def evaluation(base_model, lora_weights, datasets, use_8bit):
+def evaluation(base_model, lora_weights, datasets, use_8bit, sampling_number):
     # Create the parser and add arguments
     # parser = argparse.ArgumentParser()
     # parser.add_argument('-b', '--base-model', required=True, default='decapoda-research/llama-7b-hf', type=str, help="Choose the base model")
@@ -260,7 +260,7 @@ def evaluation(base_model, lora_weights, datasets, use_8bit):
     # parser.add_argument('-d', '--datasets', default='squadmini', choices=['wikitext','squadmini','squad','piqa'], help="Choose Evaluation Dataset. [default = squadmini]")
     # parser.add_argument('-q', '--use-8bit', action="store_true", default=False, help="Use 8-bit quant")
     # args = parser.parse_args()
-    print("base_model - {}, lora_weights - {}, datasets - {}, use_8bit - {}".format(base_model, lora_weights, datasets, use_8bit))
+    print("base_model - {}, lora_weights - {}, datasets - {}, use_8bit - {}, sampling_number - {}".format(base_model, lora_weights, datasets, use_8bit, sampling_number))
     
     tokenizer = LlamaTokenizer.from_pretrained(base_model)
     if device == "cuda":
@@ -316,24 +316,26 @@ def evaluation(base_model, lora_weights, datasets, use_8bit):
     model.eval()
     if torch.__version__ >= "2" and sys.platform != "win32" and datasets != 'wikitext':
         model = torch.compile(model)
-        
+
+    random_value = np.random.randint(100)
+
     if datasets == 'squad':
-        ds = load_dataset("squad", split="validation")
+        ds = load_dataset("squad", split="validation").shuffle(seed=random_value).select(range(sampling_number))
         f1 = calc_f1(model,tokenizer, ds, len(ds), 32)
         print(f"Squad F1 Score: {round(f1,3)}")
     elif datasets == 'squadmini':
-        ds = load_dataset("squad", split="validation")
+        ds = load_dataset("squad", split="validation").shuffle(seed=random_value).select(range(sampling_number))
         ds_size = len(ds)//10
         ds = itertools.islice(ds, 0, None, 10)
         f1 = calc_f1(model,tokenizer, ds, ds_size, 32)
         print(f"Squad 'Mini' F1 Score: {round(f1,3)}")        
     elif datasets == 'wikitext':
-        ds = load_dataset("wikitext","wikitext-2-raw-v1", split="test")
+        ds = load_dataset("wikitext","wikitext-2-raw-v1", split="test").shuffle(seed=random_value).select(range(sampling_number))
         encodings = tokenizer("\n\n".join(ds["text"]), return_tensors="pt")
         ppl = calc_perplexity(encodings, model,1024)
         print(f"wikitext perplexity: {ppl}")
     elif datasets == 'piqa':
-        ds = load_dataset("piqa", split="validation")
+        ds = load_dataset("piqa", split="validation").shuffle(seed=random_value).select(range(sampling_number))
         precision = piqa(model,tokenizer, ds, len(ds), 32)
         print(f"Piqa accuracy: {round(precision,4)}")
     else:
