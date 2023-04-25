@@ -56,7 +56,7 @@ def train(
     group_by_length: bool = False,  # faster, but produces an odd training loss curve
     # wandb params
     wandb_project: str = "Alpaca-FineTuning",
-    wandb_run_name: str = "Alpaca Uncleaned Testing",
+    wandb_run_name: str = "Alpaca_Uncleaned_Testing",
     wandb_watch: str = "gradients",  # options: false | gradients | all
     wandb_log_model: str = "true",  # options: false | true
     resume_from_checkpoint: str = None,  # either training checkpoint or final adapter
