@@ -12,6 +12,7 @@ from datasets import load_dataset
 from evaluate import load
 from transformers import GenerationConfig, LlamaForCausalLM, LlamaTokenizer
 from utils.prompter import Prompter
+import numpy as np
 
 if torch.cuda.is_available():
     device = "cuda"
