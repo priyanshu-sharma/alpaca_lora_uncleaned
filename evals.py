@@ -13,6 +13,8 @@ from evaluate import load
 from transformers import GenerationConfig, LlamaForCausalLM, LlamaTokenizer
 from utils.prompter import Prompter
 import numpy as np
+import wandb
+
 
 if torch.cuda.is_available():
     device = "cuda"
@@ -324,20 +326,24 @@ def evaluation(base_model, lora_weights, datasets, use_8bit, sampling_number):
         ds = load_dataset("squad", split="validation").shuffle(seed=random_value).select(range(sampling_number))
         f1 = calc_f1(model,tokenizer, ds, len(ds), 32)
         print(f"Squad F1 Score: {round(f1,3)}")
+        wandb.log({"Squad F1 Score": f1})
     elif datasets == 'squadmini':
         ds = load_dataset("squad", split="validation").shuffle(seed=random_value).select(range(sampling_number))
         ds_size = len(ds)//10
         ds = itertools.islice(ds, 0, None, 10)
         f1 = calc_f1(model,tokenizer, ds, ds_size, 32)
-        print(f"Squad 'Mini' F1 Score: {round(f1,3)}")        
+        print(f"Squad 'Mini' F1 Score: {round(f1,3)}")
+        wandb.log({"Squad 'Mini' F1 Score": f1})
     elif datasets == 'wikitext':
         ds = load_dataset("wikitext","wikitext-2-raw-v1", split="test").shuffle(seed=random_value).select(range(sampling_number))
         encodings = tokenizer("\n\n".join(ds["text"]), return_tensors="pt")
         ppl = calc_perplexity(encodings, model,1024)
         print(f"wikitext perplexity: {ppl}")
+        wandb.log({"Wikitext Perplexity": ppl})
     elif datasets == 'piqa':
         ds = load_dataset("piqa", split="validation").shuffle(seed=random_value).select(range(sampling_number))
         precision = piqa(model,tokenizer, ds, len(ds), 32)
         print(f"Piqa accuracy: {round(precision,4)}")
+        wandb.log({"Piqa Accuracy": precision})
     else:
         print("Unsupported Dataset")

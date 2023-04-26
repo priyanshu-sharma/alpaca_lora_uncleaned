@@ -55,8 +55,8 @@ def train(
     add_eos_token: bool = False,
     group_by_length: bool = False,  # faster, but produces an odd training loss curve
     # wandb params
-    wandb_project: str = "Alpaca-FineTuning",
-    wandb_run_name: str = "Alpaca_Uncleaned_Testing",
+    wandb_project: str = "Alpaca-Lora-7B-FineTuning",
+    wandb_run_name: str = "Alpaca_Lora_7B",
     wandb_watch: str = "gradients",  # options: false | gradients | all
     wandb_log_model: str = "true",  # options: false | true
     resume_from_checkpoint: str = None,  # either training checkpoint or final adapter
@@ -289,15 +289,17 @@ if __name__ == "__main__":
     fire.Fire(train)
     end_training_time = time.time()
     print("\nTotal Training Time - {}\n".format(end_training_time - start_training_time))
-    # datasets_list = ['wikitext', 'squadmini', 'squad', 'piqa']
-    # datasets_list = ['squadmini']
-    # base_model = 'yahma/llama-7b-hf'
-    # lora_weights = 'samwit/alpaca7B-lora'
-    # use_8bit = False
-    # sampling_number = 10
-    # for datasets in datasets_list:
-    #     start_evaluation_time = time.time()
-    #     print("Running Evaluation on {} dataset with following parameters: -\n".format(datasets))
-    #     evaluation(base_model, lora_weights, datasets, use_8bit, sampling_number)
-    #     end_evaluation_time = time.time()
-    #     print("\nTotal Evaluation Time - {}\n".format(end_evaluation_time - start_evaluation_time))
+
+    datasets_list = ['wikitext', 'squad', 'piqa']
+    base_model = 'yahma/llama-7b-hf'
+    lora_weights = 'lora_alpaca/'
+    use_8bit = False
+    sampling_number = 10
+
+    start_evaluation_time = time.time()
+    for datasets in datasets_list:
+        print("Running Evaluation on {} dataset with following parameters: -\n".format(datasets))
+        evaluation(base_model, lora_weights, datasets, use_8bit, sampling_number)
+
+    end_evaluation_time = time.time()
+    print("\nTotal Evaluation Time - {}\n".format(end_evaluation_time - start_evaluation_time))

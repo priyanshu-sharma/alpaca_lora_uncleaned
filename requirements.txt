@@ -7,17 +7,17 @@ black[jupyter]
 datasets
 fire
 git+https://github.com/huggingface/peft.git
-transformers>=4.28.0
+transformers==4.28.0
 sentencepiece
 gradio
 
 appdirs
 loralib
-bitsandbytes
+bitsandbytes==0.37.2
 datasets
 evaluate
 sentencepiece
 Levenshtein
 git+https://github.com/huggingface/peft.git
-git+https://github.com/huggingface/transformers.git
+# git+https://github.com/huggingface/transformers.git
 wandb
