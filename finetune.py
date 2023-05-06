@@ -55,8 +55,8 @@ def train(
     add_eos_token: bool = False,
     group_by_length: bool = False,  # faster, but produces an odd training loss curve
     # wandb params
-    wandb_project: str = "Alpaca-Lora-7B-FineTuning",
-    wandb_run_name: str = "Alpaca_Lora_7B",
+    wandb_project: str = "16-Cleaned-AL7B",
+    wandb_run_name: str = "Cleaned",
     wandb_watch: str = "gradients",  # options: false | gradients | all
     wandb_log_model: str = "true",  # options: false | true
     resume_from_checkpoint: str = None,  # either training checkpoint or final adapter
