@@ -294,16 +294,16 @@ if __name__ == "__main__":
         end_training_time = time.time()
         print("\nTotal Training Time - {}\n".format(end_training_time - start_training_time))
 
-        datasets_list = ['wikitext', 'squad', 'piqa']
-        base_model = 'yahma/llama-7b-hf'
-        lora_weights = 'lora_alpaca/'
-        use_8bit = False
-        sampling_number = 10
+    datasets_list = ['wikitext', 'squad', 'piqa']
+    base_model = 'yahma/llama-7b-hf'
+    lora_weights = 'lora_alpaca/'
+    use_8bit = False
+    sampling_number = 10
 
-        start_evaluation_time = time.time()
-        for datasets in datasets_list:
-            print("Running Evaluation on {} dataset with following parameters: -\n".format(datasets))
-            evaluation(base_model, lora_weights, datasets, use_8bit, sampling_number)
+    start_evaluation_time = time.time()
+    for datasets in datasets_list:
+        print("Running Evaluation on {} dataset with following parameters: -\n".format(datasets))
+        evaluation(base_model, lora_weights, datasets, use_8bit, sampling_number)
 
-        end_evaluation_time = time.time()
-        print("\nTotal Evaluation Time - {}\n".format(end_evaluation_time - start_evaluation_time))
+    end_evaluation_time = time.time()
+    print("\nTotal Evaluation Time - {}\n".format(end_evaluation_time - start_evaluation_time))
