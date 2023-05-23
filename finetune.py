@@ -231,11 +231,12 @@ def train(
         train_data = data["train"].shuffle().map(generate_and_tokenize_prompt)
         val_data = None
 
+    print("ddp - {}, device count - {}".format(ddp, torch.cuda.device_count()))
     if not ddp and torch.cuda.device_count() > 1:
         # keeps Trainer from trying its own DataParallelism when more than 1 gpu is available
         model.is_parallelizable = True
         model.model_parallel = True
-        print("\nUsing Multiple GPUs\n")
+        print("\n-------------------------------------------------------------------Using Multiple GPUs--------------------------------------------------------------\n")
 
     trainer = transformers.Trainer(
         model=model,
