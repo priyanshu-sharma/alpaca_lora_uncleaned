@@ -23,7 +23,12 @@ from peft import (
 from transformers import LlamaForCausalLM, LlamaTokenizer
 
 from utils.prompter import Prompter
+import time
+from evals import evaluation
 
+import wandb
+# wandb.init(project='Alpaca Uncleaned')
+# config = wandb.config
 
 def train(
     # model/data params
@@ -50,13 +55,27 @@ def train(
     add_eos_token: bool = False,
     group_by_length: bool = False,  # faster, but produces an odd training loss curve
     # wandb params
-    wandb_project: str = "",
-    wandb_run_name: str = "",
-    wandb_watch: str = "",  # options: false | gradients | all
-    wandb_log_model: str = "",  # options: false | true
+    wandb_project: str = "Alpaca-Lora-Multi-GPU",
+    wandb_run_name: str = "AL",
+    wandb_watch: str = "gradients",  # options: false | gradients | all
+    wandb_log_model: str = "true",  # options: false | true
     resume_from_checkpoint: str = None,  # either training checkpoint or final adapter
     prompt_template_name: str = "alpaca",  # The prompt template to use, will default to alpaca.
 ):
+    resume_from_checkpoint = False
+    # Check if parameter passed or if set within environ
+    use_wandb = len(wandb_project) > 0 or (
+        "WANDB_PROJECT" in os.environ and len(os.environ["WANDB_PROJECT"]) > 0
+    )
+    print("Wandb - {}".format(use_wandb))
+    # Only overwrite environ if wandb param passed
+    if len(wandb_project) > 0:
+        os.environ["WANDB_PROJECT"] = wandb_project
+    if len(wandb_watch) > 0:
+        os.environ["WANDB_WATCH"] = wandb_watch
+    if len(wandb_log_model) > 0:
+        os.environ["WANDB_LOG_MODEL"] = wandb_log_model
+
     if int(os.environ.get("LOCAL_RANK", 0)) == 0:
         print(
             f"Training Alpaca-LoRA model with params:\n"
@@ -96,18 +115,6 @@ def train(
     if ddp:
         device_map = {"": int(os.environ.get("LOCAL_RANK") or 0)}
         gradient_accumulation_steps = gradient_accumulation_steps // world_size
-
-    # Check if parameter passed or if set within environ
-    use_wandb = len(wandb_project) > 0 or (
-        "WANDB_PROJECT" in os.environ and len(os.environ["WANDB_PROJECT"]) > 0
-    )
-    # Only overwrite environ if wandb param passed
-    if len(wandb_project) > 0:
-        os.environ["WANDB_PROJECT"] = wandb_project
-    if len(wandb_watch) > 0:
-        os.environ["WANDB_WATCH"] = wandb_watch
-    if len(wandb_log_model) > 0:
-        os.environ["WANDB_LOG_MODEL"] = wandb_log_model
 
     model = LlamaForCausalLM.from_pretrained(
         base_model,
@@ -188,25 +195,25 @@ def train(
     else:
         data = load_dataset(data_path)
 
-    if resume_from_checkpoint:
-        # Check the available weights and load them
-        checkpoint_name = os.path.join(
-            resume_from_checkpoint, "pytorch_model.bin"
-        )  # Full checkpoint
-        if not os.path.exists(checkpoint_name):
-            checkpoint_name = os.path.join(
-                resume_from_checkpoint, "adapter_model.bin"
-            )  # only LoRA model - LoRA config above has to fit
-            resume_from_checkpoint = (
-                False  # So the trainer won't try loading its state
-            )
-        # The two files above have a different name depending on how they were saved, but are actually the same.
-        if os.path.exists(checkpoint_name):
-            print(f"Restarting from {checkpoint_name}")
-            adapters_weights = torch.load(checkpoint_name)
-            set_peft_model_state_dict(model, adapters_weights)
-        else:
-            print(f"Checkpoint {checkpoint_name} not found")
+    # if resume_from_checkpoint:
+    #     # Check the available weights and load them
+    #     checkpoint_name = os.path.join(
+    #         resume_from_checkpoint, "pytorch_model.bin"
+    #     )  # Full checkpoint
+    #     if not os.path.exists(checkpoint_name):
+    #         checkpoint_name = os.path.join(
+    #             resume_from_checkpoint, "adapter_model.bin"
+    #         )  # only LoRA model - LoRA config above has to fit
+    #         resume_from_checkpoint = (
+    #             False  # So the trainer won't try loading its state
+    #         )
+    #     # The two files above have a different name depending on how they were saved, but are actually the same.
+    #     if os.path.exists(checkpoint_name):
+    #         print(f"Restarting from {checkpoint_name}")
+    #         adapters_weights = torch.load(checkpoint_name)
+    #         set_peft_model_state_dict(model, adapters_weights)
+    #     else:
+    #         print(f"Checkpoint {checkpoint_name} not found")
 
     model.print_trainable_parameters()  # Be more transparent about the % of trainable params.
 
@@ -224,10 +231,12 @@ def train(
         train_data = data["train"].shuffle().map(generate_and_tokenize_prompt)
         val_data = None
 
+    print("ddp - {}, device count - {}".format(ddp, torch.cuda.device_count()))
     if not ddp and torch.cuda.device_count() > 1:
         # keeps Trainer from trying its own DataParallelism when more than 1 gpu is available
         model.is_parallelizable = True
         model.model_parallel = True
+        print("\n-------------------------------------------------------------------Using Multiple GPUs--------------------------------------------------------------\n")
 
     trainer = transformers.Trainer(
         model=model,
@@ -242,14 +251,14 @@ def train(
             fp16=True,
             logging_steps=10,
             optim="adamw_torch",
-            evaluation_strategy="steps" if val_set_size > 0 else "no",
-            save_strategy="steps",
+            evaluation_strategy="no",
+            save_strategy="no",
             eval_steps=200 if val_set_size > 0 else None,
             save_steps=200,
             output_dir=output_dir,
             save_total_limit=3,
             load_best_model_at_end=True if val_set_size > 0 else False,
-            ddp_find_unused_parameters=False if ddp else None,
+            ddp_find_unused_parameters=True if ddp else None,
             group_by_length=group_by_length,
             report_to="wandb" if use_wandb else None,
             run_name=wandb_run_name if use_wandb else None,
@@ -280,4 +289,22 @@ def train(
 
 
 if __name__ == "__main__":
-    fire.Fire(train)
+    with torch.autocast("cuda"):
+        start_training_time = time.time()
+        fire.Fire(train)
+        end_training_time = time.time()
+        print("\nTotal Training Time - {}\n".format(end_training_time - start_training_time))
+
+    datasets_list = ['wikitext', 'squad', 'piqa']
+    base_model = 'yahma/llama-7b-hf'
+    lora_weights = 'lora_alpaca/'
+    use_8bit = False
+    sampling_number = 10
+
+    start_evaluation_time = time.time()
+    for datasets in datasets_list:
+        print("Running Evaluation on {} dataset with following parameters: -\n".format(datasets))
+        evaluation(base_model, lora_weights, datasets, use_8bit, sampling_number)
+
+    end_evaluation_time = time.time()
+    print("\nTotal Evaluation Time - {}\n".format(end_evaluation_time - start_evaluation_time))
